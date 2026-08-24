@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lyricify-lyrics-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-24",
+  "observability": { "enabled": true },
+  "vars": {
+    "PROVIDER_ORDER": "lrclib,netease,qqmusic",
+    "CACHE_TTL_SECONDS": "86400"
+  }
+}
