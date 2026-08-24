@@ -15,7 +15,7 @@ export class KugouProvider implements LyricsProvider {
 
   async getLyrics(query: LyricsQuery) {
     const headers = { ...browserHeaders, Referer: "https://www.kugou.com/" };
-    const searchUrl = new URL("https://mobilecdn.kugou.com/api/v3/search/song");
+    const searchUrl = new URL("https://mobileservice.kugou.com/api/v3/search/song");
     searchUrl.search = new URLSearchParams({ keyword: `${query.title} ${query.artist}`, page: "1", pagesize: "20" }).toString();
     const search = await (await requireOk(await this.fetcher(searchUrl, { headers }))).json<KGSearch>();
     const candidates: KGCandidate[] = (search.data?.info ?? []).map((track) => ({

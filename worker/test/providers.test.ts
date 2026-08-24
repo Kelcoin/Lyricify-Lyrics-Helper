@@ -95,7 +95,7 @@ describe("provider adapters", () => {
     const result = await new KugouProvider(fetchMock as unknown as typeof fetch).getLyrics(query);
     expect(result?.provider).toBe("kugou");
     expect(result?.lines[0]).toEqual({ content: "Line", offsetMs: 1000 });
-    expect(new URL(String(fetchMock.mock.calls[0][0])).host).toBe("mobilecdn.kugou.com");
+    expect(new URL(String(fetchMock.mock.calls[0][0])).host).toBe("mobileservice.kugou.com");
     expect(new URL(String(fetchMock.mock.calls[2][0])).host).toBe("lyrics.kugou.com");
   });
 });
