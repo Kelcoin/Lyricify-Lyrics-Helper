@@ -91,7 +91,7 @@ describe("provider adapters", () => {
         hash: "hash", songname: "Song", singername: "Artist", album_name: "Album", duration: 180
       }] } })))
       .mockResolvedValueOnce(new Response(JSON.stringify({ candidates: [{ id: "1", accesskey: "key" }] })))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ content: "[00:01.00]Line" })));
+      .mockResolvedValueOnce(new Response(JSON.stringify({ content: base64("[00:01.00]Line") })));
     const result = await new KugouProvider(fetchMock as unknown as typeof fetch).getLyrics(query);
     expect(result?.provider).toBe("kugou");
     expect(result?.lines[0]).toEqual({ content: "Line", offsetMs: 1000 });

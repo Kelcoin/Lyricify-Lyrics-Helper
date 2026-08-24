@@ -1,6 +1,6 @@
 import { pickBestCandidate } from "../match";
 import type { LyricsProvider, LyricsQuery, SearchCandidate } from "../types";
-import { browserHeaders, mapRawLyrics, requireOk } from "./shared";
+import { browserHeaders, decodeBase64Utf8, mapRawLyrics, requireOk } from "./shared";
 
 interface KGTrack { hash: string; songname: string; singername?: string; album_name?: string; duration?: number }
 interface KGSearch { data?: { info?: KGTrack[] } }
@@ -43,6 +43,7 @@ export class KugouProvider implements LyricsProvider {
       ver: "1", client: "pc", fmt: "lrc", id: candidate.id, accesskey: candidate.accesskey, language: "english"
     }).toString();
     const downloaded = await (await requireOk(await this.fetcher(downloadUrl, { headers }))).json<KGDownload>();
-    return mapRawLyrics(this.name, "Kugou Music", match.id, downloaded.content ?? downloaded.lyrics, undefined, query.language);
+    const rawLyrics = decodeBase64Utf8(downloaded.content ?? downloaded.lyrics);
+    return mapRawLyrics(this.name, "Kugou Music", match.id, rawLyrics, undefined, query.language);
   }
 }
