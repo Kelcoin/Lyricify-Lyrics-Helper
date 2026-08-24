@@ -1,4 +1,4 @@
-export type ProviderName = "lrclib" | "netease" | "qqmusic";
+export type ProviderName = "qqmusic" | "netease" | "kugou" | "lrclib";
 
 export interface LyricsQuery {
   title: string;

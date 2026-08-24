@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { LrclibProvider } from "../src/providers/lrclib";
 import { NeteaseProvider } from "../src/providers/netease";
 import { QQMusicProvider } from "../src/providers/qqmusic";
+import { KugouProvider } from "../src/providers/kugou";
 
 const query = { title: "Song", artist: "Artist", durationMs: 180_000 };
 
@@ -82,5 +83,19 @@ describe("provider adapters", () => {
     const result = await new QQMusicProvider(fetchMock as unknown as typeof fetch).getLyrics(query);
     expect(result?.lines[0].content).toBe("Line");
     expect(new URL(String(fetchMock.mock.calls[2][0])).host).toBe("c.y.qq.com");
+  });
+
+  it("maps Kugou synced lyrics", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { info: [{
+        hash: "hash", songname: "Song", singername: "Artist", album_name: "Album", duration: 180
+      }] } })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ candidates: [{ id: "1", accesskey: "key" }] })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ content: "[00:01.00]Line" })));
+    const result = await new KugouProvider(fetchMock as unknown as typeof fetch).getLyrics(query);
+    expect(result?.provider).toBe("kugou");
+    expect(result?.lines[0]).toEqual({ content: "Line", offsetMs: 1000 });
+    expect(new URL(String(fetchMock.mock.calls[0][0])).host).toBe("mobilecdn.kugou.com");
+    expect(new URL(String(fetchMock.mock.calls[2][0])).host).toBe("lyrics.kugou.com");
   });
 });
