@@ -26,7 +26,7 @@ export class NeteaseProvider implements LyricsProvider {
   constructor(private readonly fetcher: typeof fetch = (...args) => fetch(...args)) {}
 
   async getLyrics(query: LyricsQuery) {
-    const searchUrl = new URL("https://music.163.com/api/search/get/web");
+    const searchUrl = new URL("https://interface.music.163.com/api/search/get");
     searchUrl.searchParams.set("s", `${query.title} ${query.artist}`);
     searchUrl.searchParams.set("type", "1");
     searchUrl.searchParams.set("offset", "0");
@@ -45,7 +45,7 @@ export class NeteaseProvider implements LyricsProvider {
     const match = pickBestCandidate(query, candidates);
     if (!match) return null;
 
-    const lyricUrl = new URL("https://music.163.com/api/song/lyric");
+    const lyricUrl = new URL("https://interface.music.163.com/api/song/lyric");
     lyricUrl.searchParams.set("id", match.id);
     lyricUrl.searchParams.set("lv", "-1");
     lyricUrl.searchParams.set("kv", "-1");

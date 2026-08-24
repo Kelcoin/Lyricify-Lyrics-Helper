@@ -96,20 +96,51 @@ export function createHandler(availableProviders: LyricsProvider[]) {
       if (cached) return cached;
     }
 
-    const attempted: ProviderName[] = [];
-    for (const provider of providers) {
-      attempted.push(provider.name);
-      try {
-        const result = await withTimeout(provider.getLyrics(query));
-        if (!result) continue;
-        const response = json(result, 200, { "Cache-Control": `public, max-age=${ttl}` });
-        if (defaultCache) context?.waitUntil(defaultCache.put(cacheKey, response.clone()));
-        return response;
-      } catch (error) {
-        console.warn(`[${provider.name}]`, error instanceof Error ? error.message : error);
+    const attempted = providers.map((provider) => provider.name);
+    type ProviderResult = Awaited<ReturnType<LyricsProvider["getLyrics"]>>;
+
+    const createLyricsResponse = (result: NonNullable<ProviderResult>, cacheResult = true) => {
+      const cacheControl = cacheResult ? `public, max-age=${ttl}` : "no-store";
+      const response = json(result, 200, { "Cache-Control": cacheControl });
+      if (cacheResult && defaultCache) {
+        context?.waitUntil(defaultCache.put(cacheKey, response.clone()));
       }
+      return response;
+    };
+
+    if (!query.language) {
+      for (const provider of providers) {
+        try {
+          const result = await withTimeout(provider.getLyrics(query));
+          if (result) return createLyricsResponse(result);
+        } catch (error) {
+          console.warn(`[${provider.name}]`, error instanceof Error ? error.message : error);
+        }
+      }
+      return json({ error: "lyrics_not_found", attemptedProviders: attempted }, 404);
     }
 
+    const results = await Promise.all(providers.map(async (provider): Promise<ProviderResult> => {
+      try {
+        return await withTimeout(provider.getLyrics(query));
+      } catch (error) {
+        console.warn(`[${provider.name}]`, error instanceof Error ? error.message : error);
+        return null;
+      }
+    }));
+    const requestedLanguage = query.language.toLowerCase().split(/[-_]/, 1)[0];
+    let originalFallback: NonNullable<ProviderResult> | null = null;
+
+    for (const result of results) {
+      if (!result) continue;
+      const translationLanguage = result.translation?.languageCode.toLowerCase().split(/[-_]/, 1)[0];
+      const hasMatchingTranslation = translationLanguage === requestedLanguage
+        && result.translation?.lines.some((line) => line.trim().length > 0) === true;
+      if (hasMatchingTranslation) return createLyricsResponse(result);
+      originalFallback ??= result;
+    }
+
+    if (originalFallback) return createLyricsResponse(originalFallback, false);
     return json({ error: "lyrics_not_found", attemptedProviders: attempted }, 404);
   };
 }

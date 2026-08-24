@@ -27,16 +27,18 @@ describe("provider adapters", () => {
   });
 
   it("maps Netease lyrics and translation", async () => {
-    const fetcher = vi.fn()
+    const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ result: { songs: [{
         id: 2, name: "Song", artists: [{ name: "Artist" }], duration: 180000,
         album: { name: "Album" }
       }] } })))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         lrc: { lyric: "[00:01.00]Line" }, tlyric: { lyric: "[00:01.00]译文" }
-      }))) as typeof fetch;
-    const result = await new NeteaseProvider(fetcher).getLyrics(query);
+      })));
+    const result = await new NeteaseProvider(fetchMock as unknown as typeof fetch).getLyrics(query);
     expect(result?.translation?.lines).toEqual(["译文"]);
+    expect(new URL(String(fetchMock.mock.calls[0][0])).host).toBe("interface.music.163.com");
+    expect(new URL(String(fetchMock.mock.calls[1][0])).host).toBe("interface.music.163.com");
   });
 
   it("decodes QQ Music base64 lyrics", async () => {
