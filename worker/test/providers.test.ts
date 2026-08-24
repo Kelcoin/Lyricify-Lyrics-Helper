@@ -70,4 +70,17 @@ describe("provider adapters", () => {
     expect(result?.lines[0].content).toBe("Line");
     expect(new URL(String(fetchMock.mock.calls[1][0])).host).toBe("c.y.qq.com");
   });
+
+  it("falls back to the legacy QQ lyric response", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ req_1: { data: { body: { song: { list: [{
+        id: "3", mid: "mid", title: "Song", interval: 180,
+        singer: [{ name: "Artist" }], album: { title: "Album" }
+      }] } } } } })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ req_1: { data: {} } })))
+      .mockResolvedValueOnce(new Response("MusicJsonCallback_lrc({\"lyric\":\"" + base64("[00:01.00]Line") + "\"})"));
+    const result = await new QQMusicProvider(fetchMock as unknown as typeof fetch).getLyrics(query);
+    expect(result?.lines[0].content).toBe("Line");
+    expect(new URL(String(fetchMock.mock.calls[2][0])).host).toBe("c.y.qq.com");
+  });
 });

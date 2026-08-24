@@ -83,7 +83,18 @@ export class QQMusicProvider implements LyricsProvider {
       })
     }));
     const envelope = await lyricResponse.json<QQLyricsEnvelope>();
-    const lyrics = envelope.req_1?.data;
+    let lyrics = envelope.req_1?.data;
+    if (!lyrics?.lyric) {
+      const legacyUrl = new URL("https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg");
+      legacyUrl.search = new URLSearchParams({
+        callback: "MusicJsonCallback_lrc", songmid: match.data.mid,
+        format: "jsonp", platform: "yqq", needNewCode: "0"
+      }).toString();
+      const legacyResponse = await requireOk(await this.fetcher(legacyUrl, { headers }));
+      const jsonp = await legacyResponse.text();
+      const json = jsonp.match(/^[^(]*\((.*)\)\s*;?$/s)?.[1] ?? jsonp;
+      lyrics = JSON.parse(json) as QQLyricsResponse;
+    }
     if (!lyrics?.lyric) throw new Error("QQ lyric response missing lyric");
     const result = mapRawLyrics(
       this.name,
