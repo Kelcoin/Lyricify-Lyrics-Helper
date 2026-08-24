@@ -15,6 +15,10 @@ interface QQSearchResponse {
   req_1?: { data?: { body?: { song?: { list?: QQSong[] } } } };
 }
 
+interface QQLegacySearchResponse {
+  data?: { song?: { list?: QQSong[] } };
+}
+
 interface QQLyricsResponse { lyric?: string; trans?: string }
 interface QQLyricsEnvelope { req_1?: { data?: QQLyricsResponse } }
 type QQCandidate = SearchCandidate & { data: QQSong };
@@ -38,7 +42,18 @@ export class QQMusicProvider implements LyricsProvider {
       body: JSON.stringify(body)
     }));
     const search = await searchResponse.json<QQSearchResponse>();
-    const candidates: QQCandidate[] = (search.req_1?.data?.body?.song?.list ?? []).map((song) => ({
+    let songs = search.req_1?.data?.body?.song?.list ?? [];
+    if (songs.length === 0) {
+      const fallbackUrl = new URL("https://c.y.qq.com/soso/fcgi-bin/client_search_cp");
+      fallbackUrl.search = new URLSearchParams({
+        format: "json", platform: "yqq.json", ct: "24", needNewCode: "1",
+        w: `${query.title} ${query.artist}`, cur_page: "1", sin: "0", ein: "19"
+      }).toString();
+      const fallbackResponse = await requireOk(await this.fetcher(fallbackUrl, { headers }));
+      const fallback = await fallbackResponse.json<QQLegacySearchResponse>();
+      songs = fallback.data?.song?.list ?? [];
+    }
+    const candidates: QQCandidate[] = songs.map((song) => ({
       id: song.mid || String(song.id),
       title: song.title,
       artists: (song.singer ?? []).map((artist) => artist.name),

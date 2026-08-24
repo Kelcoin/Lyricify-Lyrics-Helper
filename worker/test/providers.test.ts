@@ -56,4 +56,18 @@ describe("provider adapters", () => {
     expect(result?.translation?.lines).toEqual(["译文"]);
     expect(new URL(String(fetchMock.mock.calls[1][0])).host).toBe("u.y.qq.com");
   });
+
+  it("falls back to the legacy QQ search response", async () => {
+    const legacy = { data: { song: { list: [{
+      id: "3", mid: "mid", title: "Song", interval: 180,
+      singer: [{ name: "Artist" }], album: { title: "Album" }
+    }] } } };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ req_1: { data: { body: { song: { list: [] } } } } })))
+      .mockResolvedValueOnce(new Response(JSON.stringify(legacy)))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ req_1: { data: { lyric: base64("[00:01.00]Line") } } })));
+    const result = await new QQMusicProvider(fetchMock as unknown as typeof fetch).getLyrics(query);
+    expect(result?.lines[0].content).toBe("Line");
+    expect(new URL(String(fetchMock.mock.calls[1][0])).host).toBe("c.y.qq.com");
+  });
 });
