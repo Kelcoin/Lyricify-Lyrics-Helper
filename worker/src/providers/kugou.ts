@@ -45,6 +45,8 @@ export class KugouProvider implements LyricsProvider {
     const downloaded = await (await requireOk(await this.fetcher(downloadUrl, { headers }))).json<KGDownload>();
     const encodedLyrics = downloaded.content ?? downloaded.lyrics;
     const rawLyrics = encodedLyrics?.includes("[") ? encodedLyrics : decodeBase64Utf8(encodedLyrics);
-    return mapRawLyrics(this.name, "Kugou Music", match.id, rawLyrics, undefined, query.language);
+    const result = mapRawLyrics(this.name, "Kugou Music", match.id, rawLyrics, undefined, query.language);
+    if (!result) throw new Error("Kugou lyric response has no synced lines");
+    return result;
   }
 }
