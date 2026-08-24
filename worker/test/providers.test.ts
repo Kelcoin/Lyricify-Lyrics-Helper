@@ -59,8 +59,8 @@ describe("provider adapters", () => {
 
   it("falls back to the legacy QQ search response", async () => {
     const legacy = { data: { song: { list: [{
-      id: "3", mid: "mid", title: "Song", interval: 180,
-      singer: [{ name: "Artist" }], album: { title: "Album" }, songname: "Song"
+      id: "3", mid: "mid", title: "Song (渐渐)", interval: 180,
+      singer: [{ name: "Artist (乐队)" }], album: { title: "Album" }, songname: "Song (渐渐)"
     }] } } };
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ req_1: { data: { body: { song: { list: [] } } } } })))

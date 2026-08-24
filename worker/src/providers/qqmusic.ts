@@ -24,6 +24,10 @@ interface QQLyricsResponse { lyric?: string; trans?: string }
 interface QQLyricsEnvelope { req_1?: { data?: QQLyricsResponse } }
 type QQCandidate = SearchCandidate & { data: QQSong };
 
+function stripParenthetical(value: string): string {
+  return value.replace(/\s*[（(][^）)]*[）)]/g, "").trim();
+}
+
 export class QQMusicProvider implements LyricsProvider {
   readonly name = "qqmusic" as const;
   constructor(private readonly fetcher: typeof fetch = (...args) => fetch(...args)) {}
@@ -56,8 +60,8 @@ export class QQMusicProvider implements LyricsProvider {
     }
     const candidates: QQCandidate[] = songs.map((song) => ({
       id: song.mid || String(song.id),
-      title: song.title ?? song.songname ?? "",
-      artists: (song.singer ?? []).map((artist) => artist.name),
+      title: stripParenthetical(song.title ?? song.songname ?? ""),
+      artists: (song.singer ?? []).map((artist) => stripParenthetical(artist.name)),
       album: song.album?.title ?? song.album?.name,
       durationMs: song.interval ? song.interval * 1000 : undefined,
       data: song
