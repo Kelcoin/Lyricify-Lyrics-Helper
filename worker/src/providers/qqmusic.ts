@@ -5,7 +5,8 @@ import { browserHeaders, decodeBase64Utf8, mapRawLyrics, requireOk } from "./sha
 interface QQSong {
   id: string | number;
   mid: string;
-  title: string;
+  title?: string;
+  songname?: string;
   interval?: number;
   singer?: Array<{ name: string }>;
   album?: { title?: string; name?: string };
@@ -55,7 +56,7 @@ export class QQMusicProvider implements LyricsProvider {
     }
     const candidates: QQCandidate[] = songs.map((song) => ({
       id: song.mid || String(song.id),
-      title: song.title,
+      title: song.title ?? song.songname ?? "",
       artists: (song.singer ?? []).map((artist) => artist.name),
       album: song.album?.title ?? song.album?.name,
       durationMs: song.interval ? song.interval * 1000 : undefined,
