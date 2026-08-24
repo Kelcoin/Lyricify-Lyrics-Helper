@@ -1,7 +1,7 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
+  "$schema": "worker/node_modules/wrangler/config-schema.json",
   "name": "lyricify-lyrics-api",
-  "main": "src/index.ts",
+  "main": "worker/src/index.ts",
   "compatibility_date": "2026-08-24",
   "observability": { "enabled": true },
   "vars": {

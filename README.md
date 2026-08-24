@@ -110,6 +110,20 @@ curl "http://localhost:8787/v1/lyrics?title=Hello&artist=Adele&durationMs=295000
 
 ## 部署到 Cloudflare
 
+### 连接 GitHub 自动部署
+
+在 Cloudflare Workers & Pages 中导入本 GitHub 仓库，保持仓库根目录不变，并设置：
+
+| 设置 | 值 |
+| --- | --- |
+| Build command | 留空 |
+| Deploy command | `npx wrangler deploy` |
+| Production branch | `master` |
+
+根目录的 `wrangler.jsonc` 会让 Wrangler 自动定位 `worker/src/index.ts`。推送到 `master` 后，Cloudflare 会自动重新部署。
+
+### Wrangler 部署
+
 1. 登录 Cloudflare：
 
    ```bash
@@ -129,7 +143,7 @@ curl "http://localhost:8787/v1/lyrics?title=Hello&artist=Adele&durationMs=295000
    npm run deploy
    ```
 
-`worker/wrangler.jsonc` 提供以下默认变量：
+根目录的 `wrangler.jsonc` 提供以下默认变量：
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
