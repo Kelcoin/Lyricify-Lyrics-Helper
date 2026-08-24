@@ -46,12 +46,14 @@ describe("provider adapters", () => {
       id: "3", mid: "mid", title: "Song", interval: 180,
       singer: [{ name: "Artist" }], album: { title: "Album" }
     }] } } } } };
-    const lyric = { code: 0, lyric: base64("[00:01.00]Line"), trans: base64("[00:01.00]译文") };
-    const fetcher = vi.fn()
+    const lyric = { lyric: base64("[00:01.00]Line"), trans: base64("[00:01.00]译文") };
+    const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify(search)))
-      .mockResolvedValueOnce(new Response(`MusicJsonCallback_lrc(${JSON.stringify(lyric)})`)) as typeof fetch;
-    const result = await new QQMusicProvider(fetcher).getLyrics(query);
+      .mockResolvedValueOnce(new Response(JSON.stringify({ req_1: { data: lyric } })));
+    const result = await new QQMusicProvider(fetchMock as unknown as typeof fetch).getLyrics(query);
     expect(result?.providerLyricsId).toBe("mid");
     expect(result?.lines[0]).toEqual({ content: "Line", offsetMs: 1000 });
+    expect(result?.translation?.lines).toEqual(["译文"]);
+    expect(new URL(String(fetchMock.mock.calls[1][0])).host).toBe("u.y.qq.com");
   });
 });

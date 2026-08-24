@@ -15,7 +15,8 @@ interface QQSearchResponse {
   req_1?: { data?: { body?: { song?: { list?: QQSong[] } } } };
 }
 
-interface QQLyricsResponse { code?: number; lyric?: string; trans?: string }
+interface QQLyricsResponse { lyric?: string; trans?: string }
+interface QQLyricsEnvelope { req_1?: { data?: QQLyricsResponse } }
 type QQCandidate = SearchCandidate & { data: QQSong };
 
 export class QQMusicProvider implements LyricsProvider {
@@ -48,16 +49,21 @@ export class QQMusicProvider implements LyricsProvider {
     const match = pickBestCandidate(query, candidates);
     if (!match) return null;
 
-    const lyricUrl = new URL("https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg");
-    lyricUrl.searchParams.set("callback", "MusicJsonCallback_lrc");
-    lyricUrl.searchParams.set("songmid", match.data.mid);
-    lyricUrl.searchParams.set("format", "jsonp");
-    lyricUrl.searchParams.set("platform", "yqq");
-    lyricUrl.searchParams.set("needNewCode", "0");
-    const lyricResponse = await requireOk(await this.fetcher(lyricUrl, { headers }));
-    const jsonp = await lyricResponse.text();
-    const matchJson = jsonp.match(/^[^(]*\((.*)\)\s*;?$/s)?.[1] ?? jsonp;
-    const lyrics = JSON.parse(matchJson) as QQLyricsResponse;
+    const lyricUrl = new URL("https://u.y.qq.com/cgi-bin/musicu.fcg");
+    const lyricResponse = await requireOk(await this.fetcher(lyricUrl, {
+      method: "POST",
+      headers: { ...headers, Referer: "https://y.qq.com/" },
+      body: JSON.stringify({
+        req_1: {
+          module: "music.musichallSong.PlayLyricInfo",
+          method: "GetPlayLyricInfo",
+          param: { songmid: match.data.mid, songtype: 0 }
+        }
+      })
+    }));
+    const envelope = await lyricResponse.json<QQLyricsEnvelope>();
+    const lyrics = envelope.req_1?.data;
+    if (!lyrics) return null;
     return mapRawLyrics(
       this.name,
       "QQ Music",
