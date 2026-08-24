@@ -110,6 +110,16 @@ curl "http://localhost:8787/v1/lyrics?title=Hello&artist=Adele&durationMs=295000
 
 ## 部署到 Cloudflare
 
+### 一键部署
+
+<p align="center">
+  <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/Kelcoin/Lyricify-Lyrics-Helper">
+    <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare">
+  </a>
+</p>
+
+点击按钮后，Cloudflare 会复制本仓库并根据根目录的 `wrangler.jsonc` 创建 Worker。部署完成后，可在 Worker 的 **Settings > Variables and Secrets** 中配置环境变量。
+
 ### 连接 GitHub 自动部署
 
 在 Cloudflare Workers & Pages 中导入本 GitHub 仓库，保持仓库根目录不变，并设置：
@@ -143,12 +153,29 @@ curl "http://localhost:8787/v1/lyrics?title=Hello&artist=Adele&durationMs=295000
    npm run deploy
    ```
 
-根目录的 `wrangler.jsonc` 提供以下默认变量：
+### 环境变量
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
+| `API_TOKEN` | 未设置 | 可选 API 访问令牌；必须在 Cloudflare 中保存为 Secret。未设置时 API 公开访问 |
 | `PROVIDER_ORDER` | `lrclib,netease,qqmusic` | 来源回退顺序 |
 | `CACHE_TTL_SECONDS` | `86400` | 成功响应缓存秒数；设为 `0` 禁用缓存 |
+
+在 Cloudflare 控制台中添加 `API_TOKEN`：
+
+1. 打开已部署的 Worker。
+2. 进入 **Settings > Variables and Secrets**。
+3. 添加名为 `API_TOKEN` 的变量，选择 **Secret** 类型并填写令牌。
+4. 保存并重新部署。
+
+调用 API 时通过以下任一请求头传入相同令牌：
+
+```http
+Authorization: Bearer your-token
+X-API-Key: your-token
+```
+
+`PROVIDER_ORDER` 和 `CACHE_TTL_SECONDS` 已在根目录 `wrangler.jsonc` 中提供默认值，也可在 Cloudflare 控制台使用同名变量覆盖。
 
 > [!IMPORTANT]
 > 网易云音乐和 QQ 音乐使用其公开 Web 接口，接口可能调整、限流或受地区网络策略影响。部署者应自行确认使用方式符合服务条款。LRCLIB 数据遵循其自身许可和使用要求。
