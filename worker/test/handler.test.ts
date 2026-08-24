@@ -125,7 +125,24 @@ describe("Worker API", () => {
     }
   });
 
-    it("enforces API_TOKEN when configured", async () => {
+    it("returns sanitized provider failure diagnostics on not found", async () => {
+    const failing: LyricsProvider = {
+      name: "qqmusic",
+      getLyrics: vi.fn().mockRejectedValue(new Error("upstream HTTP 403 with token=secret"))
+    };
+    const response = await createHandler([failing])(
+      new Request("https://example.com/v1/lyrics?title=Song&artist=Artist"),
+      { CACHE_TTL_SECONDS: "0" }, {} as ExecutionContext
+    );
+    const body = await response.json() as { error?: string; providerErrors?: Record<string, string> };
+    expect(body).toMatchObject({
+      error: "lyrics_not_found",
+      providerErrors: { qqmusic: "upstream HTTP 403 with [redacted]" }
+    });
+    expect(JSON.stringify(body)).not.toContain("secret");
+  });
+
+  it("enforces API_TOKEN when configured", async () => {
     const handler = createHandler([]);
     const request = new Request("https://example.com/v1/lyrics?title=Song&artist=Artist");
     const response = await handler(request, { API_TOKEN: "secret" }, {} as ExecutionContext);

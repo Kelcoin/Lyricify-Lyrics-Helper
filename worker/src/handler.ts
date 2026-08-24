@@ -35,6 +35,11 @@ function parseQuery(url: URL): LyricsQuery | null {
   };
 }
 
+function sanitizeProviderError(error: unknown): string {
+  const message = error instanceof Error ? error.message : "provider request failed";
+  return message.replace(/(?:token|api[_ -]?key|authorization)[=: ]+\S+/gi, "[redacted]");
+}
+
 async function withTimeout<T>(operation: Promise<T>, milliseconds = 8_000): Promise<T> {
   let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -97,6 +102,7 @@ export function createHandler(availableProviders: LyricsProvider[]) {
     }
 
     const attempted = providers.map((provider) => provider.name);
+    const providerErrors: Partial<Record<ProviderName, string>> = {};
     type ProviderResult = Awaited<ReturnType<LyricsProvider["getLyrics"]>>;
 
     const createLyricsResponse = (result: NonNullable<ProviderResult>, cacheResult = true) => {
@@ -115,9 +121,11 @@ export function createHandler(availableProviders: LyricsProvider[]) {
           if (result) return createLyricsResponse(result);
         } catch (error) {
           console.warn(`[${provider.name}]`, error instanceof Error ? error.message : error);
+          providerErrors[provider.name] = sanitizeProviderError(error);
         }
       }
-      return json({ error: "lyrics_not_found", attemptedProviders: attempted }, 404);
+      return json({ error: "lyrics_not_found", attemptedProviders: attempted,
+        ...(Object.keys(providerErrors).length > 0 ? { providerErrors } : {}) }, 404);
     }
 
     const results = await Promise.all(providers.map(async (provider): Promise<ProviderResult> => {
@@ -125,6 +133,7 @@ export function createHandler(availableProviders: LyricsProvider[]) {
         return await withTimeout(provider.getLyrics(query));
       } catch (error) {
         console.warn(`[${provider.name}]`, error instanceof Error ? error.message : error);
+        providerErrors[provider.name] = sanitizeProviderError(error);
         return null;
       }
     }));
@@ -141,6 +150,7 @@ export function createHandler(availableProviders: LyricsProvider[]) {
     }
 
     if (originalFallback) return createLyricsResponse(originalFallback, false);
-    return json({ error: "lyrics_not_found", attemptedProviders: attempted }, 404);
+    return json({ error: "lyrics_not_found", attemptedProviders: attempted,
+      ...(Object.keys(providerErrors).length > 0 ? { providerErrors } : {}) }, 404);
   };
 }

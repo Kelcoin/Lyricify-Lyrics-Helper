@@ -46,8 +46,9 @@ export class QQMusicProvider implements LyricsProvider {
       durationMs: song.interval ? song.interval * 1000 : undefined,
       data: song
     }));
+    if (candidates.length === 0) throw new Error("QQ search returned no candidates");
     const match = pickBestCandidate(query, candidates);
-    if (!match) return null;
+    if (!match) throw new Error("QQ search candidate did not meet match threshold");
 
     const lyricUrl = new URL("https://u.y.qq.com/cgi-bin/musicu.fcg");
     const lyricResponse = await requireOk(await this.fetcher(lyricUrl, {
@@ -63,8 +64,8 @@ export class QQMusicProvider implements LyricsProvider {
     }));
     const envelope = await lyricResponse.json<QQLyricsEnvelope>();
     const lyrics = envelope.req_1?.data;
-    if (!lyrics) return null;
-    return mapRawLyrics(
+    if (!lyrics?.lyric) throw new Error("QQ lyric response missing lyric");
+    const result = mapRawLyrics(
       this.name,
       "QQ Music",
       match.id,
@@ -72,5 +73,7 @@ export class QQMusicProvider implements LyricsProvider {
       decodeBase64Utf8(lyrics.trans),
       query.language
     );
+    if (!result) throw new Error("QQ lyric response has no synced lines");
+    return result;
   }
 }
