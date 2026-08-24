@@ -43,7 +43,8 @@ export class KugouProvider implements LyricsProvider {
       ver: "1", client: "pc", fmt: "lrc", id: candidate.id, accesskey: candidate.accesskey, language: "english"
     }).toString();
     const downloaded = await (await requireOk(await this.fetcher(downloadUrl, { headers }))).json<KGDownload>();
-    const rawLyrics = decodeBase64Utf8(downloaded.content ?? downloaded.lyrics);
+    const encodedLyrics = downloaded.content ?? downloaded.lyrics;
+    const rawLyrics = encodedLyrics?.includes("[") ? encodedLyrics : decodeBase64Utf8(encodedLyrics);
     return mapRawLyrics(this.name, "Kugou Music", match.id, rawLyrics, undefined, query.language);
   }
 }
